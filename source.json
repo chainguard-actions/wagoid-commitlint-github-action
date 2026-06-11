@@ -1,0 +1,11 @@
+{
+  "owner": "wagoid",
+  "repo": "commitlint-github-action",
+  "version": "v6.1.0",
+  "commit_sha": "dbd4ecd47d0256b6587d1d0c5737082cc439f2c5",
+  "url": "https://github.com/wagoid/commitlint-github-action",
+  "policy_sha": "d636be7e43ef829af6e853da6b3c7566db9f72fe",
+  "test_policy_sha": "843adf9e4b8f85d0c08b27b9d0b09dd094b54702",
+  "test_agent_version": "1",
+  "harden_agent_version": "1"
+}
