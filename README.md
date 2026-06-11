@@ -1,0 +1,1 @@
+# wagoid-commitlint-github-action
