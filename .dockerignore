@@ -1,0 +1,12 @@
+node_modules
+commitlint.config.mjs
+action.yml
+.github
+CHANGELOG.md
+coverage
+fixtures
+src/action.test.js
+src/testUtils.js
+.eslintignore
+.eslintrc.json
+.nvmrc
