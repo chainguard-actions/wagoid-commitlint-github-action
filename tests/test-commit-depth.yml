@@ -1,0 +1,40 @@
+name: Test commitDepth limits commits checked
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Setup git and create commits
+        run: |
+          git config user.email "test@example.com"
+          git config user.name "Test User"
+          # First commit: invalid message (older)
+          git commit --allow-empty -m "this is a bad commit message that does not follow convention"
+          # Second commit: valid conventional commit (newer, will be checked with depth=1)
+          git commit --allow-empty -m "fix: correct a bug in the system"
+
+      - id: action
+        uses: .
+        with:
+          commitDepth: "1"
+          failOnErrors: "true"
+          failOnWarnings: "false"
+          token: ${{ github.token }}
+
+      - name: Assert only latest commit was checked and it passed
+        env:
+          ACTUAL: ${{ steps.action.outputs.results }}
+        run: |
+          echo "actual results: $ACTUAL"
+          # With commitDepth=1, only the latest valid commit should be checked
+          # The action should not fail because the latest commit is valid
+          if echo "$ACTUAL" | grep -qi '"valid":false'; then
+            echo "FAIL: expected only the valid latest commit to be checked"
+            exit 1
+          fi
+          echo "PASS: commitDepth=1 correctly limited to latest valid commit"

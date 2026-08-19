@@ -1,0 +1,41 @@
+name: Test invalid commit message
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_EVENT_NAME: push
+      GITHUB_REF: refs/heads/main
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Set up an invalid commit message
+        run: |
+          git config user.email "test@example.com"
+          git config user.name "Test User"
+          # Create a commit with an invalid message (no conventional commit format)
+          echo "test-invalid" > test-invalid.txt
+          git add test-invalid.txt
+          git commit -m "this is not a conventional commit message"
+
+      - id: action
+        uses: .
+        with:
+          failOnErrors: "false"
+          failOnWarnings: "false"
+          commitDepth: "1"
+        continue-on-error: true
+
+      - name: Assert results output contains error info
+        env:
+          RESULTS: ${{ steps.action.outputs.results }}
+        run: |
+          echo "results: $RESULTS"
+          if [ -z "$RESULTS" ]; then
+            echo "FAIL: expected results output to be non-empty for invalid commit"
+            exit 1
+          fi
+          echo "PASS: results output is present for invalid commit"

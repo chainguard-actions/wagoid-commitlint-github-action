@@ -1,0 +1,51 @@
+name: Test custom commitlint config
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_EVENT_NAME: push
+      GITHUB_REF: refs/heads/main
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Create custom commitlint config
+        run: |
+          cat > commitlint.config.mjs << 'EOF'
+          export default {
+            extends: ['@commitlint/config-conventional'],
+            rules: {
+              'type-enum': [2, 'always', ['feat', 'fix', 'docs', 'chore', 'test']],
+            },
+          };
+          EOF
+
+      - name: Set up a valid commit for custom config
+        run: |
+          git config user.email "test@example.com"
+          git config user.name "Test User"
+          echo "custom-config-test" > test-custom.txt
+          git add test-custom.txt commitlint.config.mjs
+          git commit -m "chore: add custom config test file"
+
+      - id: action
+        uses: .
+        with:
+          configFile: ./commitlint.config.mjs
+          failOnErrors: "true"
+          failOnWarnings: "false"
+          commitDepth: "1"
+
+      - name: Assert results output exists
+        env:
+          RESULTS: ${{ steps.action.outputs.results }}
+        run: |
+          echo "results: $RESULTS"
+          if [ -z "$RESULTS" ]; then
+            echo "FAIL: expected results output to be non-empty"
+            exit 1
+          fi
+          echo "PASS: action ran successfully with custom config"

@@ -1,0 +1,40 @@
+name: Test basic valid commit message
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_EVENT_NAME: push
+      GITHUB_REF: refs/heads/main
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Set up a valid conventional commit
+        run: |
+          git config user.email "test@example.com"
+          git config user.name "Test User"
+          # Create a new file and commit with a valid conventional commit message
+          echo "test" > test-valid.txt
+          git add test-valid.txt
+          git commit -m "feat: add test file"
+
+      - id: action
+        uses: .
+        with:
+          failOnErrors: "true"
+          failOnWarnings: "false"
+          commitDepth: "1"
+
+      - name: Assert results output exists
+        env:
+          RESULTS: ${{ steps.action.outputs.results }}
+        run: |
+          echo "results: $RESULTS"
+          if [ -z "$RESULTS" ]; then
+            echo "FAIL: expected results output to be non-empty"
+            exit 1
+          fi
+          echo "PASS"

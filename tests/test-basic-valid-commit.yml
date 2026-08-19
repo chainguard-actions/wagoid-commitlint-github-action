@@ -1,0 +1,42 @@
+name: Test basic valid commit linting
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      # Create a valid conventional commit so commitlint has something to check
+      - name: Setup git and create a valid commit
+        run: |
+          git config user.email "test@example.com"
+          git config user.name "Test User"
+          # Create a dummy file and commit with a valid conventional commit message
+          echo "test" > /tmp/dummy-test-file.txt
+          git add /tmp/dummy-test-file.txt 2>/dev/null || true
+          # Use an empty tree commit with a valid message
+          git commit --allow-empty -m "feat: add new feature for testing"
+
+      - id: action
+        uses: .
+        with:
+          commitDepth: "1"
+          failOnErrors: "true"
+          failOnWarnings: "false"
+          token: ${{ github.token }}
+
+      - name: Assert results output is present
+        env:
+          ACTUAL: ${{ steps.action.outputs.results }}
+        run: |
+          echo "actual results: $ACTUAL"
+          # The action should have produced some results output
+          # A valid commit should not produce error results
+          if echo "$ACTUAL" | grep -qi '"valid":false'; then
+            echo "FAIL: commit was marked invalid but should be valid"
+            exit 1
+          fi
+          echo "PASS: commit linting completed without errors"

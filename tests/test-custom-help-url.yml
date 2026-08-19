@@ -1,0 +1,37 @@
+name: Test custom helpURL input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Setup git and create a valid commit
+        run: |
+          git config user.email "test@example.com"
+          git config user.name "Test User"
+          git commit --allow-empty -m "chore: update dependencies"
+
+      - id: action
+        uses: .
+        with:
+          commitDepth: "1"
+          failOnErrors: "true"
+          failOnWarnings: "false"
+          helpURL: "https://example.com/commit-convention"
+          token: ${{ github.token }}
+
+      - name: Assert action completed with custom helpURL
+        env:
+          ACTUAL: ${{ steps.action.outputs.results }}
+        run: |
+          echo "actual results: $ACTUAL"
+          # The action should complete successfully with a valid commit
+          if echo "$ACTUAL" | grep -qi '"valid":false'; then
+            echo "FAIL: valid commit was marked as invalid"
+            exit 1
+          fi
+          echo "PASS: action completed successfully with custom helpURL"
