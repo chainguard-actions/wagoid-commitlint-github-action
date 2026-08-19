@@ -1,0 +1,34 @@
+name: Test helpURL input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      # Create a valid conventional commit
+      - name: Setup git and create a valid commit
+        run: |
+          git config user.email "test@example.com"
+          git config user.name "Test User"
+          touch tests-temp-helpurl.txt
+          git add tests-temp-helpurl.txt
+          git commit -m "docs: update documentation with helpful info"
+
+      - id: action
+        uses: .
+        with:
+          commitDepth: "1"
+          failOnErrors: "true"
+          failOnWarnings: "false"
+          helpURL: "https://example.com/commit-guidelines"
+
+      - name: Assert action succeeded with custom helpURL
+        env:
+          RESULTS: ${{ steps.action.outputs.results }}
+        run: |
+          echo "results: $RESULTS"
+          echo "PASS: action completed successfully with custom helpURL"

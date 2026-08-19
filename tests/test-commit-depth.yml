@@ -1,0 +1,42 @@
+name: Test commitDepth input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      # Create multiple commits: one invalid (older) and one valid (latest)
+      - name: Setup git and create multiple commits
+        run: |
+          git config user.email "test@example.com"
+          git config user.name "Test User"
+
+          # First commit: invalid message (older)
+          touch tests-temp-depth-1.txt
+          git add tests-temp-depth-1.txt
+          git commit -m "this is an invalid commit message"
+
+          # Second commit: valid conventional commit (latest)
+          touch tests-temp-depth-2.txt
+          git add tests-temp-depth-2.txt
+          git commit -m "fix: correct something important"
+
+      # With commitDepth=1, only the latest (valid) commit is checked
+      - id: action
+        uses: .
+        with:
+          commitDepth: "1"
+          failOnErrors: "true"
+          failOnWarnings: "false"
+
+      - name: Assert action succeeded checking only latest commit
+        env:
+          RESULTS: ${{ steps.action.outputs.results }}
+        run: |
+          echo "results: $RESULTS"
+          # Only the latest valid commit was checked due to commitDepth=1
+          echo "PASS: action completed successfully with commitDepth=1 (only checked latest valid commit)"

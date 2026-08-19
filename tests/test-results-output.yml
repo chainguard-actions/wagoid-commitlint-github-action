@@ -1,0 +1,54 @@
+name: Test results output
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_EVENT_NAME: push
+      GITHUB_REF: refs/heads/main
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      # Create a commitlint config that uses conventional commits
+      - name: Create commitlint config
+        run: |
+          cat > commitlint.config.mjs << 'EOF'
+          export default {
+            rules: {
+              'type-enum': [2, 'always', ['feat', 'fix', 'docs', 'chore', 'test', 'ci', 'refactor', 'style', 'perf', 'revert']],
+              'type-case': [2, 'always', 'lower-case'],
+              'subject-empty': [2, 'never'],
+              'type-empty': [2, 'never'],
+            },
+          };
+          EOF
+
+      # Create a valid commit for testing
+      - name: Setup git and create valid commit
+        run: |
+          git config user.email "test@example.com"
+          git config user.name "Test User"
+          echo "output-test" > test-output.txt
+          git add test-output.txt
+          git commit -m "feat: add output test file"
+
+      - id: action
+        uses: .
+        with:
+          configFile: ./commitlint.config.mjs
+          failOnErrors: "true"
+          commitDepth: "1"
+
+      - name: Assert results output is set
+        env:
+          RESULTS: ${{ steps.action.outputs.results }}
+        run: |
+          echo "results output: $RESULTS"
+          if [ -z "$RESULTS" ]; then
+            echo "FAIL: expected results output to be non-empty"
+            exit 1
+          fi
+          echo "PASS: results output is set"

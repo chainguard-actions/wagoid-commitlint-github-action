@@ -1,0 +1,35 @@
+name: Test failOnErrors false
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      # Create an invalid commit message (not following conventional commits)
+      - name: Setup git and create an invalid commit
+        run: |
+          git config user.email "test@example.com"
+          git config user.name "Test User"
+          touch tests-temp-invalid.txt
+          git add tests-temp-invalid.txt
+          git commit -m "this is not a conventional commit message at all"
+
+      - id: action
+        uses: .
+        with:
+          commitDepth: "1"
+          failOnErrors: "false"
+          failOnWarnings: "false"
+
+      - name: Assert action did not fail despite invalid commit
+        env:
+          RESULTS: ${{ steps.action.outputs.results }}
+        run: |
+          echo "results: $RESULTS"
+          # With failOnErrors=false, the action should not exit with error
+          # even if the commit message is invalid
+          echo "PASS: action completed without failing despite invalid commit (failOnErrors=false)"

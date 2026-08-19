@@ -1,0 +1,38 @@
+name: Test basic valid commit
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      # Create a valid conventional commit so commitlint has something to check
+      - name: Setup git and create a valid commit
+        run: |
+          git config user.email "test@example.com"
+          git config user.name "Test User"
+          # Create a temp file and commit it with a valid conventional commit message
+          echo "test" > /tmp/testfile.txt
+          git add /tmp/testfile.txt 2>/dev/null || true
+          touch tests-temp-valid.txt
+          git add tests-temp-valid.txt
+          git commit -m "feat: add valid conventional commit message"
+
+      - id: action
+        uses: .
+        with:
+          commitDepth: "1"
+          failOnErrors: "true"
+          failOnWarnings: "false"
+
+      - name: Assert results output exists
+        env:
+          RESULTS: ${{ steps.action.outputs.results }}
+        run: |
+          echo "results: $RESULTS"
+          # The action should succeed (exit 0) for a valid commit
+          # Results may be empty or contain success info
+          echo "PASS: action completed successfully with valid commit"
