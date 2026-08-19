@@ -1,0 +1,45 @@
+name: Test valid conventional commit
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_EVENT_NAME: push
+      GITHUB_REF: refs/heads/main
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      # Create a commitlint config that uses conventional commits
+      - name: Create commitlint config
+        run: |
+          cat > commitlint.config.mjs << 'EOF'
+          export default {
+            extends: ['@commitlint/config-conventional'],
+          };
+          EOF
+
+      # Make a valid conventional commit so the action has something to lint
+      - name: Setup git and make a valid commit
+        run: |
+          git config user.email "test@example.com"
+          git config user.name "Test User"
+          echo "test" > test-valid.txt
+          git add test-valid.txt
+          git commit -m "feat: add test file"
+
+      - id: action
+        uses: .
+        with:
+          configFile: ./commitlint.config.mjs
+          failOnErrors: "true"
+          commitDepth: "1"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Assert action succeeded
+        run: |
+          echo "Action completed successfully with a valid conventional commit"
+          echo "PASS"

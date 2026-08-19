@@ -1,0 +1,36 @@
+name: Test failOnErrors false - action should not fail even with lint errors
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+      - name: Create a strict config that will produce errors for most commits
+        run: |
+          cat > commitlint.config.mjs << 'EOF'
+          export default {
+            extends: ['@commitlint/config-conventional'],
+            rules: {
+              'subject-max-length': [2, 'always', 5],
+            },
+          };
+          EOF
+      - id: action
+        uses: .
+        with:
+          configFile: ./commitlint.config.mjs
+          failOnErrors: "false"
+          failOnWarnings: "false"
+          commitDepth: "1"
+          token: ${{ github.token }}
+      - name: Assert action did not fail despite potential lint errors
+        env:
+          RESULTS: ${{ steps.action.outputs.results }}
+        run: |
+          echo "results: $RESULTS"
+          # The action should complete without failing the workflow
+          # because failOnErrors is set to false
+          echo "PASS: action completed without failing even with strict rules"

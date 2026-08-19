@@ -35,7 +35,7 @@ outputs:
     description: The error and warning messages for each one of the analyzed commits
 runs:
   using: docker
-  image: docker://wagoid/commitlint-github-action@sha256:0c45396ecf19521155d2a772e86b7a49d88f5748a52a07d6b7263adb61bd9fc8 # 6.1.1
+  image: docker://wagoid/commitlint-github-action:6.1.1@sha256:0c45396ecf19521155d2a772e86b7a49d88f5748a52a07d6b7263adb61bd9fc8
 branding:
   icon: check-square
   color: blue

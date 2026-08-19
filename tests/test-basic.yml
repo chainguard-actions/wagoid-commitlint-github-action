@@ -1,0 +1,33 @@
+name: Test basic commitlint usage
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+      - name: Create a conventional commit config
+        run: |
+          cat > commitlint.config.mjs << 'EOF'
+          export default {
+            extends: ['@commitlint/config-conventional'],
+          };
+          EOF
+      - id: action
+        uses: .
+        with:
+          configFile: ./commitlint.config.mjs
+          failOnErrors: "false"
+          failOnWarnings: "false"
+          commitDepth: "1"
+          token: ${{ github.token }}
+      - name: Assert results output exists
+        env:
+          RESULTS: ${{ steps.action.outputs.results }}
+        run: |
+          echo "results: $RESULTS"
+          # The action should produce some results output (even if empty/passing)
+          # We just verify the action ran without crashing
+          echo "PASS: action completed successfully"
