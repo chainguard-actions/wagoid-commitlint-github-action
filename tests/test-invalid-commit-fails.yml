@@ -1,0 +1,36 @@
+name: Test action fails on invalid configuration
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Write commitlint config with disallowed .js extension
+        run: |
+          cat > commitlint.config.js << 'EOF'
+          module.exports = {
+            extends: ['@commitlint/config-conventional'],
+          };
+          EOF
+
+      - id: action
+        uses: .
+        with:
+          configFile: ./commitlint.config.js
+          failOnErrors: "true"
+        continue-on-error: true
+
+      - name: Assert action failed due to invalid config extension
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" != "failure" ]; then
+            echo "FAIL: expected action to fail when using .js config extension, got '$OUTCOME'"
+            exit 1
+          fi
+          echo "PASS: action correctly failed when using disallowed .js config extension"

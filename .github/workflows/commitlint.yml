@@ -1,0 +1,56 @@
+name: Commitlint
+on: [push, pull_request]
+
+permissions: {}
+
+jobs:
+  commitlint:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@a37ce9120846195fa4ece8f58b268e6043cb2f26 # v3
+      - run: sed -i -E "s/(docker:.+)/Dockerfile/" ./action.yml
+      - run: echo -n '' > .dockerignore
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20.16.0'
+      - uses: actions/cache@6f8efc29b200d32929f49075959781ed54ec270c # v3
+        with:
+          path: |
+            ~/.npm
+            **/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+      - run: npm ci --ignore-scripts
+      - uses: ./
+        id: run_commitlint
+        env:
+          NODE_PATH: ${{ github.workspace }}/node_modules
+      - name: Show results from JSON output
+        if: ${{ always() }}
+        env:
+          COMMITLINT_RESULTS: ${{ toJSON(steps.run_commitlint.outputs.results) }}
+        run: echo "$COMMITLINT_RESULTS"
+  commitlint-pulling-from-docker-hub:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@a37ce9120846195fa4ece8f58b268e6043cb2f26 # v3
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20.16.0'
+      - uses: actions/cache@6f8efc29b200d32929f49075959781ed54ec270c # v3
+        with:
+          path: |
+            ~/.npm
+            **/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+      - run: npm ci --ignore-scripts
+      - uses: ./
+        env:
+          NODE_PATH: ${{ github.workspace }}/node_modules

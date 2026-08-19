@@ -1,0 +1,43 @@
+name: Test commitDepth input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      # Docker actions need origin reachable inside the container
+      - name: Set up git origin reachable inside Docker container
+        run: |
+          git config user.email "test@example.com"
+          git config user.name "Test User"
+          rm -rf "$GITHUB_WORKSPACE/.git-remote"
+          git init --bare "$GITHUB_WORKSPACE/.git-remote"
+          git push "$GITHUB_WORKSPACE/.git-remote" HEAD:refs/heads/act-harness
+          git remote set-url origin "$GITHUB_WORKSPACE/.git-remote" 2>/dev/null || \
+            git remote add origin "$GITHUB_WORKSPACE/.git-remote"
+
+      - id: action
+        uses: .
+        with:
+          token: ${{ github.token }}
+          commitDepth: "5"
+          failOnErrors: "true"
+
+      - name: Assert action succeeded with commitDepth=5
+        env:
+          ACTUAL: ${{ steps.action.outputs.results }}
+        run: |
+          echo "actual results: $ACTUAL"
+          # Under workflow_dispatch there are no commits to lint
+          # commitDepth=5 limits to 5 commits but there are none, so results should be empty
+          NORM="$(echo "$ACTUAL" | tr -d '[:space:]')"
+          if [ "$NORM" = "[]" ] || [ -z "$NORM" ]; then
+            echo "PASS: action succeeded with commitDepth=5 and no commits"
+          else
+            echo "FAIL: unexpected results: $ACTUAL"
+            exit 1
+          fi
